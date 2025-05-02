@@ -1,8 +1,10 @@
 
 using KitapOkumaAPI.Data;
 using KitapOkumaAPI.Models;
+using KitapOkumaAPI.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+
 
 namespace KitapOkumaAPI
 {
@@ -19,10 +21,14 @@ namespace KitapOkumaAPI
 			builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 				.AddEntityFrameworkStores<AppDbContext>()
 				.AddDefaultTokenProviders();
-
+			builder.Services.AddAuthorization();
 			builder.Services.AddEndpointsApiExplorer();
 			builder.Services.AddSwaggerGen();
-
+			builder.Services.AddScoped<IBookService, BookService>();
+			builder.Services.AddScoped<IBookAuthorService, BookAuthorService>();
+			builder.Services.AddScoped<IBookGenreService, BookGenreService>();
+			builder.Services.AddScoped<INoteService, NoteService>();
+			builder.Services.AddScoped<IUserService, UserService>();
 			var app = builder.Build();
 
 			// Swagger
@@ -34,7 +40,7 @@ namespace KitapOkumaAPI
 
 			app.UseHttpsRedirection();
 			app.UseAuthentication();
-			//app.UseAuthorization();
+			app.UseAuthorization();
 
 			app.Run();
 		}

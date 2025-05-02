@@ -12,5 +12,15 @@ namespace KitapOkumaAPI.Data
 		public DbSet<BookAuthor> BookAuthors { get; set; }
 		public DbSet<BookGenre> BookGenres { get; set; }
 		public DbSet<Note> Notes { get; set; }
+
+		protected override void OnModelCreating(ModelBuilder modelBuilder)
+		{
+			base.OnModelCreating(modelBuilder);
+			modelBuilder.Entity<Book>()
+				.Property(b => b.Title)
+				.IsRequired()
+				.HasMaxLength(100);
+		}
+
 	}
 }
