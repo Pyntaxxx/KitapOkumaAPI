@@ -1,0 +1,71 @@
+# Build outputs
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Rider
+.idea/
+
+# ASP.NET Core secrets
+secrets.json
+
+# IIS Express
+.vs/
+*.vspscc
+
+# User-specific files
+*.sln.docstates
+*.userprefs
+
+# Dotnet tools
+.dotnet/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Logs
+*.log
+
+# Database
+*.mdf
+*.ldf
+
+# EF Core Migrations (optional - kaldırma!)
+#migrations/
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# JetBrains Rider
+.idea/
+
+# Auto-generated files
+Generated_Code/
+
+# MAUI generated
+Platforms/Android/obj/
+Platforms/Android/bin/
+Platforms/iOS/obj/
+Platforms/iOS/bin/
+Platforms/MacCatalyst/obj/
+Platforms/MacCatalyst/bin/
+Platforms/Windows/obj/
+Platforms/Windows/bin/
