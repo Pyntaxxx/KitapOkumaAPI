@@ -4,22 +4,20 @@ using KitapOkumaAPI.Models;
 using System.Collections.Generic;
 namespace KitapOkumaAPI.Data
 {
-	public class AppDbContext : IdentityDbContext<ApplicationUser>
+	public class AppDbContext : DbContext
 	{
-		public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+
+		public DbSet<ApplicationUser> applicationUsers { get; set; }
 		public DbSet<Book> Books { get; set; }
 		public DbSet<BookAuthor> BookAuthors { get; set; }
 		public DbSet<BookGenre> BookGenres { get; set; }
 		public DbSet<Note> Notes { get; set; }
+		public DbSet<UserBook> userBooks { get; set; }
 
-		protected override void OnModelCreating(ModelBuilder modelBuilder)
+		public AppDbContext(DbContextOptions options) : base(options)
 		{
-			base.OnModelCreating(modelBuilder);
-			modelBuilder.Entity<Book>()
-				.Property(b => b.Title)
-				.IsRequired()
-				.HasMaxLength(100);
+
 		}
 
 	}

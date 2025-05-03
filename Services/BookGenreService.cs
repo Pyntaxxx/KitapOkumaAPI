@@ -17,26 +17,31 @@ namespace KitapOkumaAPI.Services
 		{
 			return await _context.BookGenres.ToListAsync();
 		}
-
-		public async Task<BookGenre?> GetGenreByIdAsync(int id)
-		{
-			return await _context.BookGenres.FindAsync(id);
-		}
-
 		public async Task<BookGenre> AddGenreAsync(BookGenre genre)
 		{
-			_context.BookGenres.Add(genre);
+			var newGenre = new BookGenre
+			{
+				Name = genre.Name
+			};
+			_context.BookGenres.Add(newGenre);
 			await _context.SaveChangesAsync();
-			return genre;
+			return newGenre;
 		}
 
 		public async Task<bool> UpdateGenreAsync(BookGenre genre)
 		{
-			_context.BookGenres.Update(genre);
-			return await _context.SaveChangesAsync() > 0;
+			var existingGenre = await _context.BookGenres.FindAsync(genre.Id);
+			if (existingGenre == null)
+				return false;
+			existingGenre.Name = genre.Name;
+
+			_context.BookGenres.Update(existingGenre);
+			await _context.SaveChangesAsync();
+			return true;
+
 		}
 
-		public async Task<bool> DeleteGenreAsync(int id)
+			public async Task<bool> DeleteGenreAsync(int id)
 		{
 			var genre = await _context.BookGenres.FindAsync(id);
 			if (genre == null) return false;

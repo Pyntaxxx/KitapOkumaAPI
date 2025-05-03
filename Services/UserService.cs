@@ -1,76 +1,90 @@
-﻿using KitapOkumaAPI.Models;
+﻿using KitapOkumaAPI.Data;
+using KitapOkumaAPI.Dtos;
+using KitapOkumaAPI.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace KitapOkumaAPI.Services
 {
 	public class UserService : IUserService
 	{
-		private readonly UserManager<ApplicationUser> _userManager;
-		private readonly SignInManager<ApplicationUser> _signInManager;
+		private readonly AppDbContext _context;
 
-		public UserService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+		public UserService(AppDbContext context)
 		{
-			_userManager = userManager;
-			_signInManager = signInManager;
+			_context = context;
 		}
+
 
 		// Kullanıcı kaydetme işlemi
-		public async Task<ApplicationUser> RegisterUserAsync(ApplicationUser user, string password)
+		public async Task<ApplicationUser> RegisterUserAsync(string userName, string email, string namaLastName, string password)
 		{
-			var result = await _userManager.CreateAsync(user, password);
-			if (result.Succeeded)
+			var user = new ApplicationUser
 			{
-				return user;
-			}
-			else
-			{
-				return null;
-			}
-		}
+				UserName = userName,
+				Email = email,
+				NamaLastName = namaLastName,
+				Password = password // şifre hashlenmeden kaydediliyor
+			};
 
-		// Kullanıcı giriş yapma işlemi
-		public async Task<ApplicationUser> LoginUserAsync(string username, string password)
-		{
-			var user = await _userManager.FindByNameAsync(username);
-			if (user == null) return null;
-
-			var result = await _signInManager.PasswordSignInAsync(user, password, false, false);
-			if (result.Succeeded)
-			{
-				return user;
-			}
-
-			return null;
-		}
-
-		// Kullanıcıyı ID'ye göre bulma işlemi
-		public async Task<ApplicationUser> GetUserByIdAsync(string userId)
-		{
-			var user = await _userManager.FindByIdAsync(userId);
+			_context.applicationUsers.Add(user);
+			await _context.SaveChangesAsync();
 			return user;
 		}
 
-		// Tüm kullanıcıları listeleme işlemi
+		public async Task<ApplicationUser> LoginUserAsync(string username, string password)
+		{
+			// Kullanıcıyı UserName ile bul ve şifreyi kontrol et
+			var user = await _context.applicationUsers
+				.FirstOrDefaultAsync(u => u.UserName == username);
+
+			// Şifreyi düz olarak kontrol et
+			if (user != null && user.Password == password)
+			{
+				return user;
+			}
+
+			return null; // Kullanıcı bulunamadı veya şifre eşleşmedi
+		}
+
+
 		public async Task<IEnumerable<ApplicationUser>> GetAllUsersAsync()
 		{
-			return _userManager.Users;
+			return await _context.applicationUsers.ToListAsync();
 		}
 
-		// Kullanıcı güncelleme işlemi
-		public async Task<IdentityResult> UpdateUserAsync(ApplicationUser user)
+		public async Task<bool> UpdateUserAsync(int userId, UpdateUserDto updateUserDto)
 		{
-			var result = await _userManager.UpdateAsync(user);
-			return result;
+			var user = await _context.applicationUsers.FindAsync(userId);
+			if (user == null)
+			{
+				return false;  // Kullanıcı bulunamadı
+			}
+
+			user.UserName = updateUserDto.UserName;
+			user.Email = updateUserDto.Email;
+			user.NamaLastName = updateUserDto.NamaLastName;
+
+			// Diğer güncellemeler
+
+			
+			await _context.SaveChangesAsync();
+
+			return true;
 		}
 
-		// Kullanıcı silme işlemi
-		public async Task<IdentityResult> DeleteUserAsync(string userId)
+
+		public async Task<bool> DeleteUserAsync(int userId)
 		{
-			var user = await _userManager.FindByIdAsync(userId);
-			if (user == null) return IdentityResult.Failed(new IdentityError { Description = "Kullanıcı bulunamadı." });
+			var user = await _context.applicationUsers.FindAsync(userId);
+			if (user == null)
+				return false;
 
-			var result = await _userManager.DeleteAsync(user);
-			return result;
+			_context.applicationUsers.Remove(user);
+			await _context.SaveChangesAsync();
+			return true;
 		}
+
+
 	}
 }

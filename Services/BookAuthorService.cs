@@ -18,25 +18,31 @@ namespace KitapOkumaAPI.Services
 			return await _context.BookAuthors.ToListAsync();
 		}
 
-		public async Task<BookAuthor?> GetAuthorByIdAsync(int id)
-		{
-			return await _context.BookAuthors.FindAsync(id);
-		}
-
 		public async Task<BookAuthor> AddAuthorAsync(BookAuthor author)
 		{
-			_context.BookAuthors.Add(author);
+			var newAuthor = new BookAuthor
+			{
+				Name = author.Name
+			};
+			_context.BookAuthors.Add(newAuthor);
 			await _context.SaveChangesAsync();
-			return author;
+			return newAuthor;
 		}
+
 
 		public async Task<bool> UpdateAuthorAsync(BookAuthor author)
 		{
-			_context.BookAuthors.Update(author);
-			return await _context.SaveChangesAsync() > 0;
+			var existingAuthor = await _context.BookAuthors.FindAsync(author.Id);
+			if (existingAuthor == null)
+				return false;
+			existingAuthor.Name = author.Name;
+
+			_context.BookAuthors.Update(existingAuthor);
+			await _context.SaveChangesAsync();
+			return true;
 		}
 
-		public async Task<bool> DeleteAuthorAsync(int id)
+			public async Task<bool> DeleteAuthorAsync(int id)
 		{
 			var author = await _context.BookAuthors.FindAsync(id);
 			if (author == null) return false;
