@@ -210,15 +210,27 @@ namespace KitapOkumaAPI
 
 
 
-			app.MapPost("/users/{userId}/books/{bookId}", async (int userId, int bookId, IUserBookService service) =>
+			app.MapPost("/userbooks", async (IUserBookService service, int userId, int bookId, bool isRead) =>
 			{
-				var success = await service.AddBookToUserAsync(userId, bookId);
-				return success ? Results.Ok("Kitap eklendi.") : Results.BadRequest("Kitap eklenemedi.");
+				await service.AddUserBookAsync(userId, bookId, isRead);
+				return Results.Ok("Kitap iliþkilendirildi.");
 			});
 
-			app.MapGet("/users/{userId}/books", async (int userId, IUserBookService service) =>
+			app.MapGet("/userbooks/{userId}", async (int userId, IUserBookService service) =>
 			{
 				var books = await service.GetUserBooksAsync(userId);
+				return Results.Ok(books);
+			});
+
+			app.MapGet("/userbooks/{userId}/read", async (int userId, IUserBookService service) =>
+			{
+				var books = await service.GetReadBooksAsync(userId);
+				return Results.Ok(books);
+			});
+
+			app.MapGet("/userbooks/{userId}/unread", async (int userId, IUserBookService service) =>
+			{
+				var books = await service.GetUnreadBooksAsync(userId);
 				return Results.Ok(books);
 			});
 

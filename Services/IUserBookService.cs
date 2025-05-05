@@ -1,10 +1,12 @@
 ﻿using KitapOkumaAPI.Models;
-
+using KitapOkumaAPI.Dtos;
 namespace KitapOkumaAPI.Services
 {
 	public interface IUserBookService
 	{
-		Task<bool> AddBookToUserAsync(int userId, int bookId);
-		Task<IEnumerable<Book>> GetUserBooksAsync(int userId);
+		Task AddUserBookAsync(int userId, int bookId, bool isRead);
+		Task<IEnumerable<UserBookDto>> GetUserBooksAsync(int userId);
+		Task<IEnumerable<UserBookDto>> GetReadBooksAsync(int userId);
+		Task<IEnumerable<UserBookDto>> GetUnreadBooksAsync(int userId);
 	}
 }

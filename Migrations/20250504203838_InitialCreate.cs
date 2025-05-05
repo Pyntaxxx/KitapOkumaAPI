@@ -76,19 +76,19 @@ namespace KitapOkumaAPI.Migrations
                         column: x => x.AuthorId,
                         principalTable: "BookAuthors",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Books_BookGenres_GenreId",
                         column: x => x.GenreId,
                         principalTable: "BookGenres",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Books_applicationUsers_UserId1",
                         column: x => x.UserId1,
                         principalTable: "applicationUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -109,7 +109,35 @@ namespace KitapOkumaAPI.Migrations
                         column: x => x.BookId,
                         principalTable: "Books",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "userBooks",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    BookId = table.Column<int>(type: "int", nullable: false),
+                    IsRead = table.Column<bool>(type: "bit", nullable: false),
+                    AddedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_userBooks", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_userBooks_Books_BookId",
+                        column: x => x.BookId,
+                        principalTable: "Books",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_userBooks_applicationUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "applicationUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -131,6 +159,16 @@ namespace KitapOkumaAPI.Migrations
                 name: "IX_Notes_BookId",
                 table: "Notes",
                 column: "BookId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_userBooks_BookId",
+                table: "userBooks",
+                column: "BookId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_userBooks_UserId",
+                table: "userBooks",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -138,6 +176,9 @@ namespace KitapOkumaAPI.Migrations
         {
             migrationBuilder.DropTable(
                 name: "Notes");
+
+            migrationBuilder.DropTable(
+                name: "userBooks");
 
             migrationBuilder.DropTable(
                 name: "Books");

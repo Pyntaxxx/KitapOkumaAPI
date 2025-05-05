@@ -156,24 +156,53 @@ namespace KitapOkumaAPI.Migrations
                     b.ToTable("Notes");
                 });
 
+            modelBuilder.Entity("KitapOkumaAPI.Models.UserBook", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AddedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("BookId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("userBooks");
+                });
+
             modelBuilder.Entity("KitapOkumaAPI.Models.Book", b =>
                 {
                     b.HasOne("KitapOkumaAPI.Models.BookAuthor", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("KitapOkumaAPI.Models.BookGenre", "Genre")
                         .WithMany()
                         .HasForeignKey("GenreId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("KitapOkumaAPI.Models.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId1")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Author");
@@ -188,10 +217,29 @@ namespace KitapOkumaAPI.Migrations
                     b.HasOne("KitapOkumaAPI.Models.Book", "Book")
                         .WithMany("Notes")
                         .HasForeignKey("BookId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Book");
+                });
+
+            modelBuilder.Entity("KitapOkumaAPI.Models.UserBook", b =>
+                {
+                    b.HasOne("KitapOkumaAPI.Models.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("KitapOkumaAPI.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("KitapOkumaAPI.Models.Book", b =>

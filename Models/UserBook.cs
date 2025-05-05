@@ -10,6 +10,8 @@
 		public int BookId { get; set; }
 		public Book Book { get; set; }
 
+		public bool IsRead { get; set; }
+
 		public DateTime AddedDate { get; set; } = DateTime.Now;
 	}
 }

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KitapOkumaAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250503204338_InitialCreate")]
+    [Migration("20250504203838_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -159,6 +159,35 @@ namespace KitapOkumaAPI.Migrations
                     b.ToTable("Notes");
                 });
 
+            modelBuilder.Entity("KitapOkumaAPI.Models.UserBook", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AddedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("BookId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("userBooks");
+                });
+
             modelBuilder.Entity("KitapOkumaAPI.Models.Book", b =>
                 {
                     b.HasOne("KitapOkumaAPI.Models.BookAuthor", "Author")
@@ -195,6 +224,25 @@ namespace KitapOkumaAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("Book");
+                });
+
+            modelBuilder.Entity("KitapOkumaAPI.Models.UserBook", b =>
+                {
+                    b.HasOne("KitapOkumaAPI.Models.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("KitapOkumaAPI.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("KitapOkumaAPI.Models.Book", b =>

@@ -1,4 +1,5 @@
 ﻿using KitapOkumaAPI.Data;
+using KitapOkumaAPI.Dtos;
 using KitapOkumaAPI.Models;
 using Microsoft.EntityFrameworkCore;
 namespace KitapOkumaAPI.Services
@@ -12,21 +13,72 @@ namespace KitapOkumaAPI.Services
 			_context = context;
 		}
 
-		public async Task<bool> AddBookToUserAsync(int userId, int bookId)
+		public async Task AddUserBookAsync(int userId, int bookId, bool isRead)
 		{
-			var userBook = new UserBook { UserId = userId, BookId = bookId };
+			var userBook = new UserBook
+			{
+				UserId = userId,
+				BookId = bookId,
+				IsRead = isRead,
+				AddedDate = DateTime.UtcNow
+			};
+
 			_context.userBooks.Add(userBook);
 			await _context.SaveChangesAsync();
-			return true;
 		}
 
-		public async Task<IEnumerable<Book>> GetUserBooksAsync(int userId)
+		public async Task<IEnumerable<UserBookDto>> GetUserBooksAsync(int userId)
 		{
 			return await _context.userBooks
-				.Where(ub => ub.UserId == userId)
 				.Include(ub => ub.Book)
-				.Select(ub => ub.Book)
+				.Where(ub => ub.UserId == userId)
+				.Select(ub => new UserBookDto
+				{
+					BookId = ub.BookId,
+					Title = ub.Book.Title,
+					IsRead = ub.IsRead,
+					CreatedAt = ub.AddedDate
+				})
 				.ToListAsync();
 		}
+
+
+		
+		public async Task<IEnumerable<UserBookDto>> GetReadBooksAsync(int userId)
+		{
+			return await _context.userBooks
+				.Include(ub => ub.Book)
+				.Where(ub => ub.UserId == userId && ub.IsRead)
+				.Select(ub => new UserBookDto
+				{
+					BookId = ub.BookId,
+					Title = ub.Book.Title,
+					IsRead = ub.IsRead,
+					CreatedAt = ub.AddedDate
+				})
+				.ToListAsync();
+		}
+
+		public async Task<IEnumerable<UserBookDto>> GetUnreadBooksAsync(int userId)
+		{
+			return await _context.userBooks
+				.Include(ub => ub.Book)
+				.Where(ub => ub.UserId == userId && !ub.IsRead)
+				.Select(ub => new UserBookDto
+				{
+					BookId = ub.BookId,
+					Title = ub.Book.Title,
+					IsRead = ub.IsRead,
+					CreatedAt = ub.AddedDate
+				})
+				.ToListAsync();
+		}
+
+
+
+
+
+
+
 	}
 }
