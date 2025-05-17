@@ -4,6 +4,7 @@ using KitapOkumaAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KitapOkumaAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250517130802_InitialCr")]
+    partial class InitialCr
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -152,7 +155,7 @@ namespace KitapOkumaAPI.Migrations
                     b.ToTable("Notes");
                 });
 
-            modelBuilder.Entity("UserBook", b =>
+            modelBuilder.Entity("KitapOkumaAPI.Models.UserBook", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -175,11 +178,16 @@ namespace KitapOkumaAPI.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
+                    b.Property<int>("UserId1")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BookId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId1");
 
                     b.ToTable("UserBooks");
                 });
@@ -222,7 +230,7 @@ namespace KitapOkumaAPI.Migrations
                     b.Navigation("Book");
                 });
 
-            modelBuilder.Entity("UserBook", b =>
+            modelBuilder.Entity("KitapOkumaAPI.Models.UserBook", b =>
                 {
                     b.HasOne("KitapOkumaAPI.Models.Book", "Book")
                         .WithMany()
@@ -230,11 +238,19 @@ namespace KitapOkumaAPI.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.HasOne("KitapOkumaAPI.Models.ApplicationUser", "User")
+                    b.HasOne("KitapOkumaAPI.Models.ApplicationUser", "ApplicationUser")
                         .WithMany("UserBooks")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+
+                    b.HasOne("KitapOkumaAPI.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId1")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ApplicationUser");
 
                     b.Navigation("Book");
 

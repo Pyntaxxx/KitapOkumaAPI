@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace KitapOkumaAPI.Models
 {
@@ -20,9 +22,15 @@ namespace KitapOkumaAPI.Models
 		public DateTime StartDate { get; set; }
 		public DateTime? EndDate { get; set; }
 
-		public string UserId { get; set; }
-		public ApplicationUser User { get; set; }
+		public int UserId { get; set; }
 
-		public ICollection<Note> Notes { get; set; }
+        [ForeignKey("UserId")]
+        [JsonIgnore]
+        public ApplicationUser ApplicationUser { get; set; }
+
+
+        [JsonIgnore]
+
+        public ICollection<Note> Notes { get; set; }
 	}
 }

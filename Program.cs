@@ -1,241 +1,242 @@
-
 using KitapOkumaAPI.Data;
 using KitapOkumaAPI.Dtos;
 using KitapOkumaAPI.Models;
 using KitapOkumaAPI.Services;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Security.Claims;
-
 
 namespace KitapOkumaAPI
 {
-	public class Program
-	{
-		public static void Main(string[] args)
-		{
-			var builder = WebApplication.CreateBuilder(args);
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
 
-			// DbContext ve Identity servisleri
-			builder.Services.AddDbContext<AppDbContext>(options =>
-				options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            // DbContext ve servisler
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-		
-			builder.Services.AddAuthorization();
-			builder.Services.AddEndpointsApiExplorer();
-			builder.Services.AddSwaggerGen();
-			builder.Services.AddScoped<IBookService, BookService>();
-			builder.Services.AddScoped<IBookAuthorService, BookAuthorService>();
-			builder.Services.AddScoped<IBookGenreService, BookGenreService>();
-			builder.Services.AddScoped<INoteService, NoteService>();
-			builder.Services.AddScoped<IUserService, UserService>();
-			builder.Services.AddScoped<IUserBookService, UserBookService>();
-			var app = builder.Build();
+            builder.Services.AddAuthorization();
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
+            builder.Services.AddScoped<IBookService, BookService>();
+            builder.Services.AddScoped<IBookAuthorService, BookAuthorService>();
+            builder.Services.AddScoped<IBookGenreService, BookGenreService>();
+            builder.Services.AddScoped<INoteService, NoteService>();
+            builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IUserBookService, UserBookService>();
 
 
-			// Swagger
-			if (app.Environment.IsDevelopment())
-			{
-				app.UseSwagger();
-				app.UseSwaggerUI();
-			}
-
-			app.UseHttpsRedirection();
-		
-			app.UseAuthorization();
+            builder.Services.AddControllers()
+    .AddJsonOptions(x =>
+        x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve);
 
 
-			//Book Author 
-			app.MapGet("/authors", async (IBookAuthorService service) =>
-			{
-				var authors = await service.GetAuthorsAsync();
-				return Results.Ok(authors);
-			});
+            var app = builder.Build();
 
-			app.MapPost("/authors", async (IBookAuthorService service, BookAuthor author) =>
-			{
-				var result = await service.AddAuthorAsync(author);
-				return Results.Created($"/authors/{result.Id}", result);
-			});
+            // Swagger
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
 
-			app.MapPut("/authors/{id}", async (int id, IBookAuthorService service, BookAuthor updatedAuthor) =>
-			{
-				if (id != updatedAuthor.Id)
-					return Results.BadRequest("ID uyuþmuyor.");
+            app.UseHttpsRedirection();
+            app.UseAuthorization();
 
-				var success = await service.UpdateAuthorAsync(updatedAuthor);
-				return success ? Results.Ok(updatedAuthor) : Results.NotFound();
-			});
+            // Book Author 
+            app.MapGet("/authors", async (IBookAuthorService service) =>
+            {
+                var authors = await service.GetAuthorsAsync();
+                return Results.Ok(authors);
+            });
 
-			app.MapDelete("/authors/{id}", async (int id, IBookAuthorService service) =>
-			{
-				var success = await service.DeleteAuthorAsync(id);
-				return success ? Results.Ok() : Results.NotFound();
-			});
+            app.MapPost("/authors", async (IBookAuthorService service, BookAuthor author) =>
+            {
+                var result = await service.AddAuthorAsync(author);
+                return Results.Created($"/authors/{result.Id}", result);
+            });
 
-			//Book Genre
-			app.MapGet("/genres", async (IBookGenreService service) =>
-			{
-				var genres = await service.GetGenresAsync();
-				return Results.Ok(genres);
-			});
+            app.MapPut("/authors/{id}", async (int id, IBookAuthorService service, BookAuthor updatedAuthor) =>
+            {
+                if (id != updatedAuthor.Id)
+                    return Results.BadRequest("ID uyuþmuyor.");
 
-			app.MapPost("/genres", async (IBookGenreService service, BookGenre genre) =>
-			{
-				var created = await service.AddGenreAsync(genre);
-				return Results.Created($"/genres/{created.Id}", created);
+                var success = await service.UpdateAuthorAsync(updatedAuthor);
+                return success ? Results.Ok(updatedAuthor) : Results.NotFound();
+            });
 
-			});
+            app.MapDelete("/authors/{id}", async (int id, IBookAuthorService service) =>
+            {
+                var success = await service.DeleteAuthorAsync(id);
+                return success ? Results.Ok() : Results.NotFound();
+            });
 
-			app.MapPut("/genres/{id}", async (int id, IBookGenreService service, BookGenre updated) =>
-			{
-				if (id != updated.Id)
-					return Results.BadRequest("ID uyumsuzluðu.");
-				var success = await service.UpdateGenreAsync(updated);
-				return success ? Results.Ok(updated) : Results.NotFound();
-			});
+            // Book Genre
+            app.MapGet("/genres", async (IBookGenreService service) =>
+            {
+                var genres = await service.GetGenresAsync();
+                return Results.Ok(genres);
+            });
 
-			app.MapDelete("/genres/{id}", async (int id, IBookGenreService service) =>
-			{
-				var success = await service.DeleteGenreAsync(id);
-				return success ? Results.Ok() : Results.NotFound();
-			});
+            app.MapPost("/genres", async (IBookGenreService service, BookGenre genre) =>
+            {
+                var created = await service.AddGenreAsync(genre);
+                return Results.Created($"/genres/{created.Id}", created);
+            });
 
+            app.MapPut("/genres/{id}", async (int id, IBookGenreService service, BookGenre updated) =>
+            {
+                if (id != updated.Id)
+                    return Results.BadRequest("ID uyumsuzluðu.");
+                var success = await service.UpdateGenreAsync(updated);
+                return success ? Results.Ok(updated) : Results.NotFound();
+            });
 
-			//Book
-			app.MapGet("/books", async (IBookService service) =>
-			{
-				var books = await service.GetBooksAsync();
-				return Results.Ok(books);
-			});
+            app.MapDelete("/genres/{id}", async (int id, IBookGenreService service) =>
+            {
+                var success = await service.DeleteGenreAsync(id);
+                return success ? Results.Ok() : Results.NotFound();
+            });
 
-			app.MapPost("/books", async (IBookService service, Book book) =>
-			{
-				var createdBook = await service.AddBookAsync(book);
-				return createdBook != null
-					? Results.Created($"/books/{createdBook.Id}", createdBook)
-					: Results.BadRequest("Kitap oluþturulamadý.");
-			});
+            // Book
+            app.MapGet("/books", async (IBookService service) =>
+            {
+                var books = await service.GetBooksAsync();
+                return Results.Ok(books);
+            });
 
-			app.MapPut("/books/{id}", async (IBookService service, int id, Book book) =>
-			{
-				book.Id = id;  // ID'yi book nesnesine ekle
-				var isUpdated = await service.UpdateBookAsync(book);
-				return isUpdated
-					? Results.Ok(book)
-					: Results.NotFound("Kitap bulunamadý veya güncelleme baþarýsýz.");
-			});
+            app.MapPost("/books", async (IBookService service, BookDto bookDto) =>
+            {
+                var createdBook = await service.AddBookAsync(bookDto);
+                return createdBook != null
+                    ? Results.Created($"/books/{createdBook.Id}", createdBook)
+                    : Results.BadRequest("Kitap oluþturulamadý.");
+            });
 
-			app.MapDelete("/books/{id}", async (int id, IBookService service) =>
-			{
-				var success = await service.DeleteBookAsync(id);
-				return success ? Results.Ok() : Results.NotFound();
-			});
-
-
-			//Book Notes
-			app.MapGet("/notes", async (INoteService service) =>
-			{
-				var notes = await service.GetNotesAsync();
-				return Results.Ok(notes);
-			});
-
-			app.MapPost("/notes", async (INoteService service, Note note) =>
-			{
-				var created = await service.AddNoteAsync(note);
-				return Results.Created($"/notes/{created.Id}", created);
-			});
-
-			app.MapPut("/notes/{id}", async (int id, INoteService service, Note note) =>
-			{
-				if (id != note.Id)
-					return Results.BadRequest("ID uyuþmazlýðý.");
-				var success = await service.UpdateNoteAsync(note);
-				return success ? Results.Ok(note) : Results.NotFound();
-			});
-
-			app.MapDelete("/notes/{id}", async (int id, INoteService service) =>
-			{
-				var success = await service.DeleteNoteAsync(id);
-				return success ? Results.Ok() : Results.NotFound();
-			});
-
-
-			//User
-			app.MapPost("/users/register", async (IUserService service, ApplicationUser user, string password) =>
-			{
-				// Kullanýcýyý oluþtur
-				var createdUser = await service.RegisterUserAsync(user.UserName, user.Email, user.NamaLastName, password);
-
-				return createdUser is not null
-					? Results.Created($"/users/{createdUser.Id}", createdUser)
-					: Results.BadRequest("Kullanýcý oluþturulamadý.");
-			});
+            app.MapPut("/books/{id}", async (IBookService service, int id, BookDto bookDto) =>
+            {
+                bookDto.Id = id;
+                var isUpdated = await service.UpdateBookAsync(bookDto);
+                return isUpdated
+                    ? Results.Ok(bookDto)
+                    : Results.NotFound("Kitap bulunamadý veya güncelleme baþarýsýz.");
+            });
 
 
 
-			app.MapPost("/users/login", async (IUserService service, string username, string password) =>
-			{
-				var user = await service.LoginUserAsync(username, password);
-				return user is not null
-				? Results.Ok(user)
-				: Results.Unauthorized();
-			});
+            app.MapDelete("/books/{id}", async (int id, IBookService service) =>
+            {
+                var success = await service.DeleteBookAsync(id);
+                return success ? Results.Ok() : Results.NotFound();
+            });
 
-			app.MapGet("/users", async (IUserService service) =>
-			{
-				var users = await service.GetAllUsersAsync();
-				return Results.Ok(users);
-			});
+            // Book Notes
+            app.MapGet("/notes", async (INoteService service) =>
+            {
+                var notes = await service.GetNotesAsync();
+                return Results.Ok(notes);
+            });
 
-			app.MapPut("/users/{id}", async (int id, IUserService service, UpdateUserDto updateUserDto) =>
-			{
-				var success = await service.UpdateUserAsync(id, updateUserDto);
-				return success
-					? Results.Ok(updateUserDto)
-					: Results.NotFound("Kullanýcý bulunamadý veya güncelleme baþarýsýz.");
-			});
+            app.MapPost("/notes", async (INoteService service, NoteDto noteDto) =>
+            {
+                var created = await service.AddNoteAsync(noteDto);
+                return Results.Created($"/notes/{created.Id}", created);
+            });
 
-
-
-
-			app.MapDelete("/users/{userId}", async (IUserService service, int userId) =>
-			{
-				var success = await service.DeleteUserAsync(userId);
-				return success
-					? Results.Ok($"Kullanýcý {userId} silindi.")
-					: Results.NotFound($"Kullanýcý {userId} bulunamadý.");
-			});
+            app.MapPut("/notes/{id}", async (int id, INoteService service, NoteDto noteDto) =>
+            {
+                noteDto.Id = id;  // URL'den gelen id'yi dto'ya ata
+                var success = await service.UpdateNoteAsync(noteDto);
+                return success ? Results.Ok(noteDto) : Results.NotFound();
+            });
 
 
 
-			app.MapPost("/userbooks", async (IUserBookService service, int userId, int bookId, bool isRead) =>
-			{
-				await service.AddUserBookAsync(userId, bookId, isRead);
-				return Results.Ok("Kitap iliþkilendirildi.");
-			});
+            app.MapDelete("/notes/{id}", async (int id, INoteService service) =>
+            {
+                var success = await service.DeleteNoteAsync(id);
+                return success ? Results.Ok() : Results.NotFound();
+            });
 
-			app.MapGet("/userbooks/{userId}", async (int userId, IUserBookService service) =>
-			{
-				var books = await service.GetUserBooksAsync(userId);
-				return Results.Ok(books);
-			});
+            // User
+            app.MapPost("/users/register", async (IUserService service, RegisterDto registerDto) =>
+            {
+                try
+                {
+                    var createdUser = await service.RegisterUserAsync(registerDto);
+                    return Results.Created($"/users/{createdUser.Id}", new { Message = "User registered successfully", UserId = createdUser.Id });
+                }
+                catch (Exception ex)
+                {
+                    return Results.BadRequest(new { Message = ex.Message });
+                }
+            });
 
-			app.MapGet("/userbooks/{userId}/read", async (int userId, IUserBookService service) =>
-			{
-				var books = await service.GetReadBooksAsync(userId);
-				return Results.Ok(books);
-			});
+            app.MapPost("/users/login", async (IUserService service, LoginDto loginDto) =>
+            {
+                var user = await service.LoginUserAsync(loginDto);
+                return user is not null
+                    ? Results.Ok(new { Message = "Login successful", UserId = user.Id })
+                    : Results.Unauthorized();
+            });
 
-			app.MapGet("/userbooks/{userId}/unread", async (int userId, IUserBookService service) =>
-			{
-				var books = await service.GetUnreadBooksAsync(userId);
-				return Results.Ok(books);
-			});
+            app.MapGet("/users", async (IUserService service) =>
+            {
+                var users = await service.GetAllUsersAsync();
+                return Results.Ok(users);
+            });
 
+            app.MapPut("/users/{id}", async (int id, IUserService service, UpdateUserDto updateUserDto) =>
+            {
+                var success = await service.UpdateUserAsync(id, updateUserDto);
+                return success
+                    ? Results.Ok(updateUserDto)
+                    : Results.NotFound("Kullanýcý bulunamadý veya güncelleme baþarýsýz.");
+            });
 
-			app.Run();
-		}
-	}
+            app.MapDelete("/users/{userId}", async (IUserService service, int userId) =>
+            {
+                var success = await service.DeleteUserAsync(userId);
+                return success
+                    ? Results.Ok($"Kullanýcý {userId} silindi.")
+                    : Results.NotFound($"Kullanýcý {userId} bulunamadý.");
+            });
+
+            // UserBooks
+            // UserBooks
+            app.MapPost("/userbooks", async (IUserBookService service, int userId, AddUserBookDto userBookDto) =>
+            {
+                try
+                {
+                    await service.AddUserBookAsync(userId, userBookDto);
+                    return Results.Ok("Kitap iliþkilendirildi.");
+                }
+                catch (Exception ex)
+                {
+                    return Results.BadRequest(new { Message = ex.Message });
+                }
+            });
+
+            app.MapGet("/userbooks/{userId}", async (int userId, IUserBookService service) =>
+            {
+                var books = await service.GetUserBooksAsync(userId);
+                return Results.Ok(books);
+            });
+
+            app.MapGet("/userbooks/{userId}/read", async (int userId, IUserBookService service) =>
+            {
+                var books = await service.GetReadBooksAsync(userId);
+                return Results.Ok(books);
+            });
+
+            app.MapGet("/userbooks/{userId}/unread", async (int userId, IUserBookService service) =>
+            {
+                var books = await service.GetUnreadBooksAsync(userId);
+                return Results.Ok(books);
+            });
+
+            app.Run();
+        }
+    }
 }

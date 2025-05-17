@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using System.Text.Json.Serialization;
 
 namespace KitapOkumaAPI.Models
 {
@@ -11,6 +12,12 @@ namespace KitapOkumaAPI.Models
 		public string Email { get; set; }
 		public string NamaLastName { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-		//public ICollection<Book>? Books { get; set; }
-	}
+
+        [JsonIgnore]
+        public ICollection<Book>? Books { get; set; }
+
+        [JsonIgnore]
+        public ICollection<UserBook> UserBooks { get; set; }
+
+    }
 }
