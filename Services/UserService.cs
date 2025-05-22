@@ -51,7 +51,7 @@ namespace KitapOkumaAPI.Services
                 return user;
             }
 
-            return null; // Kullanıcı bulunamadı veya şifre eşleşmedi
+            return null; 
         }
 
         public async Task<IEnumerable<ApplicationUser>> GetAllUsersAsync()

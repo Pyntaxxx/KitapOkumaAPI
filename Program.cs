@@ -159,29 +159,34 @@ namespace KitapOkumaAPI
                 return success ? Results.Ok() : Results.NotFound();
             });
 
-            // User
-            app.MapPost("/users/register", async (IUserService service, RegisterDto registerDto) =>
-            {
-                try
-                {
-                    var createdUser = await service.RegisterUserAsync(registerDto);
-                    return Results.Created($"/users/{createdUser.Id}", new { Message = "User registered successfully", UserId = createdUser.Id });
-                }
-                catch (Exception ex)
-                {
-                    return Results.BadRequest(new { Message = ex.Message });
-                }
-            });
+			// User
+			app.MapPost("/users/register", async (IUserService service, RegisterDto registerDto) =>
+			{
+				try
+				{
+					var createdUser = await service.RegisterUserAsync(registerDto);
+					return Results.Ok(new
+					{
+						Message = "User registered successfully",
+						UserId = createdUser.Id
+					});
+				}
+				catch (Exception ex)
+				{
+					return Results.BadRequest(new { Message = ex.Message });
+				}
+			});
 
-            app.MapPost("/users/login", async (IUserService service, LoginDto loginDto) =>
-            {
-                var user = await service.LoginUserAsync(loginDto);
-                return user is not null
-                    ? Results.Ok(new { Message = "Login successful", UserId = user.Id })
-                    : Results.Unauthorized();
-            });
 
-            app.MapGet("/users", async (IUserService service) =>
+			app.MapPost("/users/login", async (IUserService service, LoginDto loginDto) =>
+			{
+				var user = await service.LoginUserAsync(loginDto);
+				return user is not null
+					? Results.Ok(new { Message = "Login successful", UserId = user.Id, User = user }) 
+					: Results.Unauthorized();
+			});
+
+			app.MapGet("/users", async (IUserService service) =>
             {
                 var users = await service.GetAllUsersAsync();
                 return Results.Ok(users);
