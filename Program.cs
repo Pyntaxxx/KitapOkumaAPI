@@ -3,6 +3,11 @@ using KitapOkumaAPI.Dtos;
 using KitapOkumaAPI.Models;
 using KitapOkumaAPI.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.AspNetCore.Authorization;
 
 namespace KitapOkumaAPI
 {
@@ -12,12 +17,40 @@ namespace KitapOkumaAPI
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // DbContext ve servisler
-            builder.Services.AddDbContext<AppDbContext>(options =>
+			builder.Services.AddCors(options =>
+			{
+				options.AddPolicy("AllowAll", policy =>
+				{
+					policy.AllowAnyOrigin()
+						  .AllowAnyMethod()
+						  .AllowAnyHeader();
+				});
+			});
+
+			builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            builder.Services.AddAuthorization();
-            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddAuthorization(options =>
+            {
+				options.AddPolicy("AuthorOnly", policy => policy.RequireRole("Author", "Admin"));
+				options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+			});
+
+			builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+				.AddJwtBearer(options =>
+				{
+					options.TokenValidationParameters = new TokenValidationParameters
+					{
+						ValidateIssuer = true,
+						ValidateAudience = true,
+						ValidateLifetime = true,
+						ValidateIssuerSigningKey = true,
+						ValidIssuer = "KitapOkumaAPI",
+						ValidAudience = "KitapOkumaClient",
+						IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("your-very-secure-secret-key-1234567890123456your-very-secure-secret-key-1234567890123456your-very-secure-secret-key-1234567890123456your-very-secure-secret-key-1234567890123456"))
+					};
+				});
+			builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddScoped<IBookService, BookService>();
             builder.Services.AddScoped<IBookAuthorService, BookAuthorService>();
@@ -25,11 +58,10 @@ namespace KitapOkumaAPI
             builder.Services.AddScoped<INoteService, NoteService>();
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IUserBookService, UserBookService>();
-
-
-            builder.Services.AddControllers()
-    .AddJsonOptions(x =>
-        x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve);
+			builder.Services.AddHttpContextAccessor();
+			builder.Services.AddControllers()
+            .AddJsonOptions(x =>
+                  x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve);
 
 
             var app = builder.Build();
@@ -41,17 +73,20 @@ namespace KitapOkumaAPI
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
-            app.UseAuthorization();
+			app.UseHttpsRedirection();
+			app.UseCors("AllowAll");
+			app.UseAuthentication();
+			app.UseAuthorization();
+			app.MapControllers();
 
-            // Book Author 
-            app.MapGet("/authors", async (IBookAuthorService service) =>
-            {
-                var authors = await service.GetAuthorsAsync();
-                return Results.Ok(authors);
-            });
 
-            app.MapPost("/authors", async (IBookAuthorService service, BookAuthor author) =>
+			app.MapGet("/authors", async (IUserService service) =>
+			{
+				var authors = await service.GetAuthorsAsync();
+				return Results.Ok(authors);
+			}).RequireAuthorization();
+
+			app.MapPost("/authors", async (IBookAuthorService service, BookAuthor author) =>
             {
                 var result = await service.AddAuthorAsync(author);
                 return Results.Created($"/authors/{result.Id}", result);
@@ -106,33 +141,49 @@ namespace KitapOkumaAPI
                 return Results.Ok(books);
             });
 
-            app.MapPost("/books", async (IBookService service, BookDto bookDto) =>
-            {
-                var createdBook = await service.AddBookAsync(bookDto);
-                return createdBook != null
-                    ? Results.Created($"/books/{createdBook.Id}", createdBook)
-                    : Results.BadRequest("Kitap oluþturulamadý.");
-            });
+			app.MapPost("/books", async (IBookService service, Book book, HttpContext context) =>
+			{
+				var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+				if (string.IsNullOrEmpty(userId))
+					return Results.Unauthorized();
 
-            app.MapPut("/books/{id}", async (IBookService service, int id, BookDto bookDto) =>
-            {
-                bookDto.Id = id;
-                var isUpdated = await service.UpdateBookAsync(bookDto);
-                return isUpdated
-                    ? Results.Ok(bookDto)
-                    : Results.NotFound("Kitap bulunamadý veya güncelleme baþarýsýz.");
-            });
+				var createdBook = await service.AddBookAsync(book, int.Parse(userId));
+				return createdBook != null
+					? Results.Created($"/books/{createdBook.Id}", createdBook)
+					: Results.BadRequest("Kitap oluþturulamadý.");
+			}).RequireAuthorization("AuthorOnly");
+
+			app.MapPut("/books/{id}", async (IBookService service, int id, BookUpdateDto bookDto, HttpContext context) =>
+			{
+				var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+				if (string.IsNullOrEmpty(userId))
+					return Results.Unauthorized();
+
+				bookDto.Id = id;
+				var isUpdated = await service.UpdateBookAsync(bookDto, int.Parse(userId));
+				return isUpdated
+					? Results.Ok(bookDto)
+					: Results.NotFound("Kitap bulunamadý veya güncelleme baþarýsýz.");
+			}).RequireAuthorization("AuthorOnly");
 
 
 
-            app.MapDelete("/books/{id}", async (int id, IBookService service) =>
-            {
-                var success = await service.DeleteBookAsync(id);
-                return success ? Results.Ok() : Results.NotFound();
-            });
+			app.MapDelete("/books/{id}", async (int id, IBookService service, AppDbContext context, HttpContext httpContext) =>
+			{
+				var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+				if (string.IsNullOrEmpty(userId))
+					return Results.Unauthorized();
 
-            // Book Notes
-            app.MapGet("/notes", async (INoteService service) =>
+				var book = await context.Books.FindAsync(id);
+				if (book == null || book.AuthorId != int.Parse(userId))
+					return Results.Forbid();
+
+				var success = await service.DeleteBookAsync(id);
+				return success ? Results.Ok() : Results.NotFound();
+			}).RequireAuthorization("AuthorOnly");
+
+			// Book Notes
+			app.MapGet("/notes", async (INoteService service) =>
             {
                 var notes = await service.GetNotesAsync();
                 return Results.Ok(notes);
@@ -180,19 +231,26 @@ namespace KitapOkumaAPI
 
 			app.MapPost("/users/login", async (IUserService service, LoginDto loginDto) =>
 			{
-				var user = await service.LoginUserAsync(loginDto);
+				var (user, token) = await service.LoginUserAsync(loginDto);
 				return user is not null
-					? Results.Ok(new { Message = "Login successful", UserId = user.Id, User = user }) 
+					? Results.Ok(new { Message = "Login successful", UserId = user.Id, User = user, Token = token })
 					: Results.Unauthorized();
 			});
 
-			app.MapGet("/users", async (IUserService service) =>
-            {
-                var users = await service.GetAllUsersAsync();
-                return Results.Ok(users);
-            });
+			//app.MapGet("/users", async (IUserService service) =>
+   //         {
+   //             var users = await service.GetAllUsersAsync();
+   //             return Results.Ok(users);
+   //         });
 
-            app.MapPut("/users/{id}", async (int id, IUserService service, UpdateUserDto updateUserDto) =>
+			app.MapGet("/users", async (IUserService userService) =>
+			{
+				var users = await userService.GetAllUsersAsync();
+				return Results.Ok(users);
+			}).RequireAuthorization("AdminOnly");
+
+
+			app.MapPut("/users/{id}", async (int id, IUserService service, UpdateUserDto updateUserDto) =>
             {
                 var success = await service.UpdateUserAsync(id, updateUserDto);
                 return success
@@ -200,17 +258,16 @@ namespace KitapOkumaAPI
                     : Results.NotFound("Kullanýcý bulunamadý veya güncelleme baþarýsýz.");
             });
 
-            app.MapDelete("/users/{userId}", async (IUserService service, int userId) =>
-            {
-                var success = await service.DeleteUserAsync(userId);
-                return success
-                    ? Results.Ok($"Kullanýcý {userId} silindi.")
-                    : Results.NotFound($"Kullanýcý {userId} bulunamadý.");
-            });
+			app.MapDelete("/users/{id}", async (int id, IUserService userService) =>
+			{
+				var result = await userService.DeleteUserAsync(id);
+				return result ? Results.Ok() : Results.NotFound();
+			}).RequireAuthorization("AdminOnly");
 
-            // UserBooks
-            // UserBooks
-            app.MapPost("/userbooks", async (IUserBookService service, int userId, AddUserBookDto userBookDto) =>
+
+			// UserBooks
+			
+			app.MapPost("/userbooks", async (IUserBookService service, int userId, AddUserBookDto userBookDto) =>
             {
                 try
                 {
@@ -241,7 +298,75 @@ namespace KitapOkumaAPI
                 return Results.Ok(books);
             });
 
-            app.Run();
+
+			app.MapGet("/books/author/{userId}", async (int userId, IBookService service) =>
+			{
+				var books = await service.GetBooksByAuthorAsync(userId);
+				return Results.Ok(books);
+			}).RequireAuthorization("AuthorOnly");
+
+			app.MapGet("/genres/available", async (IBookService service) =>
+			{
+				try
+				{
+					var genres = await service.GetAvailableGenresAsync();
+					System.Diagnostics.Debug.WriteLine($"Genres retrieved: {string.Join(", ", genres ?? new List<string>())}");
+					return genres != null ? Results.Ok(genres) : Results.NoContent();
+				}
+				catch (Exception ex)
+				{
+					System.Diagnostics.Debug.WriteLine($"Error in /genres/available: {ex.Message}\n{ex.StackTrace}");
+					return Results.Problem(ex.Message);
+				}
+			});
+
+
+
+			app.MapGet("/users/{userId}/profile", [Authorize] async (int userId, IUserService userService) =>
+			{
+				try
+				{
+					var user = await userService.GetUserProfileAsync(userId);
+					return Results.Ok(user);
+				}
+				catch (Exception ex)
+				{
+					System.Diagnostics.Debug.WriteLine($"Error in /users/{userId}/profile: {ex.Message}\n{ex.StackTrace}");
+					return Results.Problem(ex.Message);
+				}
+			});
+
+			app.MapGet("/books/search", async (string term, IBookService service, HttpContext context) =>
+			{
+				try
+				{
+					var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+					if (string.IsNullOrEmpty(userId))
+					{
+						System.Diagnostics.Debug.WriteLine("SearchBooks: Unauthorized - userId is null or empty");
+						return Results.Unauthorized();
+					}
+
+					if (!int.TryParse(userId, out int parsedUserId))
+					{
+						System.Diagnostics.Debug.WriteLine($"SearchBooks: Invalid userId format: {userId}");
+						return Results.BadRequest("Geçersiz kullanýcý ID formatý.");
+					}
+
+					var books = await service.SearchBooksAsync(term, parsedUserId);
+					return Results.Ok(books);
+				}
+				catch (Exception ex)
+				{
+					System.Diagnostics.Debug.WriteLine($"Error in /books/search: {ex.Message}\n{ex.StackTrace}");
+					return Results.Problem($"Kitap aranýrken bir hata oluþtu: {ex.Message}");
+				}
+			}).RequireAuthorization("AuthorOnly");
+
+
+
+
+			app.Run();
         }
     }
 }

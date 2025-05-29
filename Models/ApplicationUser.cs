@@ -11,7 +11,8 @@ namespace KitapOkumaAPI.Models
 		public string Password { get; set; }
 		public string Email { get; set; }
 		public string NamaLastName { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+		public string Role { get; set; }
+		public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [JsonIgnore]
         public ICollection<Book>? Books { get; set; }
