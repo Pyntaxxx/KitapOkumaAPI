@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KitapOkumaAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250517142537_InitiFixUserBookModel")]
-    partial class InitiFixUserBookModel
+    [Migration("20250604105138_MelikeTarafindanEklendi")]
+    partial class MelikeTarafindanEklendi
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -48,6 +48,10 @@ namespace KitapOkumaAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("UserName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -68,30 +72,24 @@ namespace KitapOkumaAPI.Migrations
                     b.Property<int>("AuthorId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("datetime2");
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
-                    b.Property<int>("GenreId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("datetime2");
+                    b.Property<string>("Genre")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("AuthorId");
-
-                    b.HasIndex("GenreId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Books");
                 });
@@ -189,35 +187,19 @@ namespace KitapOkumaAPI.Migrations
 
             modelBuilder.Entity("KitapOkumaAPI.Models.Book", b =>
                 {
-                    b.HasOne("KitapOkumaAPI.Models.BookAuthor", "Author")
-                        .WithMany()
+                    b.HasOne("KitapOkumaAPI.Models.ApplicationUser", "ApplicationUser")
+                        .WithMany("Books")
                         .HasForeignKey("AuthorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("KitapOkumaAPI.Models.BookGenre", "Genre")
-                        .WithMany()
-                        .HasForeignKey("GenreId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("KitapOkumaAPI.Models.ApplicationUser", "ApplicationUser")
-                        .WithMany("Books")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("ApplicationUser");
-
-                    b.Navigation("Author");
-
-                    b.Navigation("Genre");
                 });
 
             modelBuilder.Entity("KitapOkumaAPI.Models.Note", b =>
                 {
                     b.HasOne("KitapOkumaAPI.Models.Book", "Book")
-                        .WithMany("Notes")
+                        .WithMany()
                         .HasForeignKey("BookId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -249,11 +231,6 @@ namespace KitapOkumaAPI.Migrations
                     b.Navigation("Books");
 
                     b.Navigation("UserBooks");
-                });
-
-            modelBuilder.Entity("KitapOkumaAPI.Models.Book", b =>
-                {
-                    b.Navigation("Notes");
                 });
 #pragma warning restore 612, 618
         }

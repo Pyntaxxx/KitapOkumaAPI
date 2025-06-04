@@ -80,13 +80,14 @@ namespace KitapOkumaAPI
 			app.MapControllers();
 
 
-			app.MapGet("/authors", async (IUserService service) =>
-			{
-				var authors = await service.GetAuthorsAsync();
-				return Results.Ok(authors);
-			}).RequireAuthorization();
+            app.MapGet("/authors", async (IBookAuthorService service) =>
+            {
+                var authors = await service.GetAuthorsAsync();
+                return Results.Ok(authors);
+            });
 
-			app.MapPost("/authors", async (IBookAuthorService service, BookAuthor author) =>
+
+            app.MapPost("/authors", async (IBookAuthorService service, BookAuthor author) =>
             {
                 var result = await service.AddAuthorAsync(author);
                 return Results.Created($"/authors/{result.Id}", result);
